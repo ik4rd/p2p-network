@@ -4,8 +4,8 @@
 
 #include "peer.hpp"
 
-Peer::Peer(const std::string &address, unsigned short port) : address_(address), port_(port) {
-}
+Peer::Peer(const std::string &address, unsigned short port) :
+	address_(address), port_(port) {}
 
 std::string Peer::address() const {
 	std::lock_guard<std::mutex> lock(mutex_);

@@ -3,17 +3,16 @@
 //
 
 #pragma once
+#include <boost/asio.hpp>
+#include <mutex>
+#include <set>
+#include <thread>
+#include <unordered_map>
+#include <vector>
+
 #include "message.hpp"
 #include "peer.hpp"
-
 #include "thread_pool.hpp"
-
-#include <boost/asio.hpp>
-#include <thread>
-#include <vector>
-#include <unordered_map>
-#include <set>
-#include <mutex>
 
 class Network {
 public:
