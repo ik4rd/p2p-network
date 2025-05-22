@@ -9,6 +9,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable(p2p_network src/main.cpp
         src/message.cpp
+        include/message.hpp
         src/peer.cpp
         include/peer.hpp
 )
