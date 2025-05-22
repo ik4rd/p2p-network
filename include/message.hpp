@@ -9,7 +9,7 @@
 #include <vector>
 #include <sstream>
 #include <cstdint>
-
+#include <memory>
 
 enum class MessageType : uint8_t { TEXT = 0, FILE = 1, REQUEST = 2 };
 
@@ -27,25 +27,30 @@ public:
 
 	virtual std::string serialize() const = 0;
 
+	virtual std::unique_ptr<Message> clone() const = 0;
+
 	static std::unique_ptr<Message> deserialize(const std::string &data);
+
+	static std::string makeuid();
 
 protected:
 	std::string serialize_header() const {
+		const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(timestamp.time_since_epoch()).count();
 		std::ostringstream oss;
-		oss << static_cast<int>(type) << '|' << id << '|' << sender << '|' << timestamp.time_since_epoch().count() <<
-				'|';
+		oss << static_cast<int>(type) << '|' << id << '|' << sender << '|' << ms << '|';
 		return oss.str();
 	}
 
-	static void deserialize_header(std::istringstream &iss, MessageType &out_type, std::string &out_id,
-									std::string &out_sender, long long &out_ts) {
+	static void deserialize_header(
+		std::istringstream &iss, MessageType &out_type, std::string &out_id,
+		std::string &out_sender, long long &out_ms) {
 		int t;
 		iss >> t;
 		iss.get();
 		out_type = static_cast<MessageType>(t);
 		std::getline(iss, out_id, '|');
 		std::getline(iss, out_sender, '|');
-		iss >> out_ts;
+		iss >> out_ms;
 		iss.get();
 	}
 };
@@ -61,15 +66,17 @@ public:
 		return serialize_header() + text;
 	}
 
+	std::unique_ptr<Message> clone() const override {
+		return std::make_unique<TextMessage>(*this);
+	}
+
 	static std::unique_ptr<TextMessage> from_stream(
-		std::istringstream &iss,
-		const std::string &id,
-		const std::string &sender,
-		const long long ts) {
+		std::istringstream &iss, const std::string &id,
+		const std::string &sender, const long long ms) {
 		auto ptr = std::make_unique<TextMessage>();
 		ptr->id = id;
 		ptr->sender = sender;
-		ptr->timestamp = std::chrono::system_clock::time_point(std::chrono::system_clock::duration(ts));
+		ptr->timestamp = std::chrono::system_clock::time_point(std::chrono::milliseconds(ms));
 		std::getline(iss, ptr->text);
 		return ptr;
 	}
@@ -92,11 +99,13 @@ public:
 		return out;
 	}
 
+	std::unique_ptr<Message> clone() const override {
+		return std::make_unique<FileMessage>(*this);
+	}
+
 	static std::unique_ptr<FileMessage> from_stream(
-		const std::string &data,
-		const std::string &id,
-		const std::string &sender,
-		const long long ts,
+		const std::string &data, const std::string &id,
+		const std::string &sender, const long long ms,
 		const std::streampos &payload) {
 		std::istringstream iss(data.substr(0, payload));
 		std::string file_name;
@@ -107,7 +116,7 @@ public:
 		auto ptr = std::make_unique<FileMessage>();
 		ptr->id = id;
 		ptr->sender = sender;
-		ptr->timestamp = std::chrono::system_clock::time_point(std::chrono::system_clock::duration(ts));
+		ptr->timestamp = std::chrono::system_clock::time_point(std::chrono::milliseconds(ms));
 		ptr->filename = file_name;
 		ptr->bytes.assign(data.begin() + payload, data.begin() + payload + size);
 		return ptr;
@@ -125,14 +134,17 @@ public:
 		return serialize_header() + filename;
 	}
 
+	std::unique_ptr<Message> clone() const override {
+		return std::make_unique<RequestMessage>(*this);
+	}
+
 	static std::unique_ptr<RequestMessage> from_stream(
 		std::istringstream &iss, const std::string &id,
-		const std::string &sender, const long long ts) {
+		const std::string &sender, const long long ms) {
 		auto ptr = std::make_unique<RequestMessage>();
 		ptr->id = id;
 		ptr->sender = sender;
-		ptr->timestamp = std::chrono::system_clock::time_point(
-			std::chrono::system_clock::duration(ts));
+		ptr->timestamp = std::chrono::system_clock::time_point(std::chrono::milliseconds(ms));
 		std::getline(iss, ptr->filename);
 		return ptr;
 	}

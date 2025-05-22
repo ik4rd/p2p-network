@@ -6,8 +6,14 @@
 #include "message.hpp"
 #include "peer.hpp"
 
+#include "thread_pool.hpp"
+
 #include <boost/asio.hpp>
 #include <thread>
+#include <vector>
+#include <unordered_map>
+#include <set>
+#include <mutex>
 
 class Network {
 public:
@@ -22,14 +28,17 @@ private:
 
 	void gossip();
 
-	void handle(boost::asio::ip::tcp::socket socket);
+	void handle(std::shared_ptr<boost::asio::ip::tcp::socket> socket);
 
-	void send(const std::string &address, const string &data);
+	void send(const std::string &address, const std::string &data);
 
 	Peer &self_;
 	boost::asio::io_context ctx_;
 	boost::asio::ip::tcp::acceptor acceptor_;
-	std::vector<std::thread> threads_;
-	std::vector<Message> messages_;
+
+	Pool pool_;
+
+	std::vector<std::unique_ptr<Message> > messages_;
+	std::unordered_map<std::string, std::set<std::string> > history_;
 	std::mutex mutex_;
 };
