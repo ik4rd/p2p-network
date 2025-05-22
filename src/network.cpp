@@ -48,6 +48,13 @@ void Network::handle(std::shared_ptr<tcp::socket> socket) {
 		std::string raw;
 		std::getline(is, raw);
 		auto message = Message::deserialize(raw);
+
+		if (message->sender == self_.address()) {
+			// std::lock_guard<std::mutex> lock(mutex_);
+			// messages_.push_back(message->clone());
+			return;
+		}
+
 		switch (message->type) {
 			case MessageType::TEXT: {
 				auto *t = static_cast<TextMessage *>(message.get());
