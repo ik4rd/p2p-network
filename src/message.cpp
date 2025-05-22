@@ -18,8 +18,12 @@ std::unique_ptr<Message> Message::deserialize(const std::string &data) {
 	}
 
 	if (type == MessageType::FILE) {
-		std::streampos payload = iss.tellg();
+		const std::streampos payload = iss.tellg();
 		return FileMessage::from_stream(data, id, sender, ts, payload);
+	}
+
+	if (type == MessageType::REQUEST) {
+		return RequestMessage::from_stream(iss, id, sender, ts);
 	}
 
 	return nullptr;

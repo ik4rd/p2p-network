@@ -11,7 +11,7 @@
 #include <cstdint>
 
 
-enum class MessageType : uint8_t { TEXT = 0, FILE = 1 };
+enum class MessageType : uint8_t { TEXT = 0, FILE = 1, REQUEST = 2 };
 
 class Message {
 public:
@@ -110,6 +110,30 @@ public:
 		ptr->timestamp = std::chrono::system_clock::time_point(std::chrono::system_clock::duration(ts));
 		ptr->filename = file_name;
 		ptr->bytes.assign(data.begin() + payload, data.begin() + payload + size);
+		return ptr;
+	}
+};
+
+class RequestMessage final : public Message {
+public:
+	std::string filename;
+
+	RequestMessage() : Message(MessageType::REQUEST) {
+	}
+
+	std::string serialize() const override {
+		return serialize_header() + filename;
+	}
+
+	static std::unique_ptr<RequestMessage> from_stream(
+		std::istringstream &iss, const std::string &id,
+		const std::string &sender, const long long ts) {
+		auto ptr = std::make_unique<RequestMessage>();
+		ptr->id = id;
+		ptr->sender = sender;
+		ptr->timestamp = std::chrono::system_clock::time_point(
+			std::chrono::system_clock::duration(ts));
+		std::getline(iss, ptr->filename);
 		return ptr;
 	}
 };

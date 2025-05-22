@@ -12,6 +12,8 @@ add_executable(p2p_network src/main.cpp
         include/message.hpp
         src/peer.cpp
         include/peer.hpp
+        src/network.cpp
+        include/network.hpp
 )
 
 target_link_libraries(p2p_network ${Boost_LIBRARIES})
